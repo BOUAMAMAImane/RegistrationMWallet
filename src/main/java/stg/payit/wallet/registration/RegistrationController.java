@@ -150,8 +150,7 @@ public class RegistrationController {
 		return appUserService.addToken(fcmToken, user);
 	}
 	@PostMapping(path = "remove_fcm_token")
-	public ResponseEntity<Object> remove_fcm(
-				@RequestParam("user_email") String email) {
+	public ResponseEntity<Object> remove_fcm(@RequestParam("user_email") String email) {
 		AppUser user = appUserRepository.findByEmail(email).get();
 		return appUserService.removeToken(user);
 	}
