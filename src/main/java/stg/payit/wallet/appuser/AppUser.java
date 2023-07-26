@@ -46,7 +46,7 @@ public class AppUser implements UserDetails {
 	//@Column(unique = true)
 //	private String rib;
 	@Column(unique = true)
-	private String phoneId; // ID du téléphone
+	private String deviceId; // ID du téléphone
 
 	private String longitude;
 	private String Latitude;// Localisation
@@ -61,7 +61,7 @@ public class AppUser implements UserDetails {
 	private Boolean enabled = false;
 	private String gender;
 	public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole,
-			String phoneNumber,String cin, String gender, String phoneId, String longitude,String latitude, Date loginTime) {
+			String phoneNumber,String cin, String gender, String deviceId, String longitude,String latitude, Date loginTime) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
@@ -73,11 +73,12 @@ public class AppUser implements UserDetails {
 		this.solde = 0;		
 		this.cin = cin;
 		this.gender=gender;
-		this.phoneId = phoneId;
-		this.longitude = latitude;
+		this.deviceId = deviceId;
+		this.longitude = longitude;
+		this.Latitude=latitude;
 		this.loginTime = loginTime;
 	}
-}
+
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		SimpleGrantedAuthority authority = new SimpleGrantedAuthority(appUserRole.name());

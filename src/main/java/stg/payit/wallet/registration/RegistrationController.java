@@ -46,6 +46,10 @@ import stg.payit.wallet.appuser.AppUserService;
 import stg.payit.wallet.registration.RegistrationService;
 import stg.payit.wallet.responseHandler.ResponseHandler;
 
+
+
+
+
 @RestController
 @CrossOrigin("*")
 @RequestMapping(path = "registration")
@@ -64,17 +68,23 @@ public class RegistrationController {
 		if (appUserRepository.findByEmail(request.getEmail()).isPresent()) {
 			return ResponseHandler.generateResponse("Email Already Exists", HttpStatus.OK, null);
 		}
+
 		return registrationService.register(request);
 	}
+
+
 	@GetMapping("sessionId")
 	public String sessionIds() throws ParseException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 
+
+
 		String sessionid = RequestContextHolder.currentRequestAttributes().getSessionId();
 
-		 byte[] decodedKey = new Base64(true).decode("oJ8z4yvbYB6r_dQ5EP080djUyWLBExkM");
-		 Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+		byte[] decodedKey = new Base64(true).decode("oJ8z4yvbYB6r_dQ5EP080djUyWLBExkM");
+		Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 //		Key secretKey = parseSecretKey(sessionid);
-	
+
 
 		Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
 		cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
@@ -86,61 +96,64 @@ public class RegistrationController {
 		System.out.println("------------------ENCRYPTE MESSAGE ---------------");
 		System.out.println(encryptedValue);
 		return encryptedValue + "---------"+sessionid;
-	
+
 	}
+
+
 	@GetMapping("session")
 	public String sessionId(HttpServletRequest request) throws ParseException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		//HttpSession session = request.getSession();
-	//	 System.out.println(session.getAttribute("UserName"));
-		
-	
+		//	 System.out.println(session.getAttribute("UserName"));
+
+
 //		 byte[] decodedKey = new Base64(true).decode("ZUXRxkanVL7FATY-zT41XqiV0WuCrF9LFuDfVZbB".substring(0,32));
 //		 Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 //		byte[] s = new Base64().encode(decodedKey);
 //		String ss = new String(s);
-		
+
 		HttpSession session = request.getSession();
 		String uuid = UUID.randomUUID().toString().replaceAll("-","");
 		System.out.println(uuid);
 		session.setAttribute("uuid",uuid);
 		return uuid;
-		}
-	
+	}
+
 	@GetMapping("sessionTest")
 	public String session(HttpServletRequest request,HttpServletResponse response) {
 		HttpSession session = request.getSession();
-		
+
 		String uuid = UUID.randomUUID().toString().replaceAll("-","");
 		String uuids = UUID.randomUUID().toString().replaceAll("-","");
 		System.out.println(uuid);
 		System.out.println(uuids);
 		session.setAttribute("uuid",uuid);
 		return uuid;
-		
+
 	}
+
+
 	@GetMapping("userbygender")
 	public List<AppUser> getUsersByGender(@RequestParam(name = "gender") String gender){
 		return appUserService.getUsersByGender(gender);
 	}
+
+
 	@PutMapping("changepassword")
 	public ResponseEntity<Object>changePassword(@RequestBody RegistrationRequest registrationRequest) {
 		Optional<AppUser> user = appUserRepository.findByEmail(registrationRequest.getEmail());
 		if (user.isPresent()) {
 			return appUserService.changePassword(user,registrationRequest);
 		}
-		else 		
-		return ResponseHandler.generateResponseString("User not found", HttpStatus.OK);
+		else
+			return ResponseHandler.generateResponseString("User not found", HttpStatus.OK);
 	}
+
 	@GetMapping(path = "confirm")
 	public RedirectView confirm(@RequestParam("token") String token) {
-		 registrationService.confirmToken(token);
-		 RedirectView redirectView = new RedirectView();
-			redirectView.setUrl("https://testingg.page.link/open");
-			return redirectView;
-	}
-	@GetMapping("/hello")
-	public String getHello() {
-		return "Hello";
+		registrationService.confirmToken(token);
+		RedirectView redirectView = new RedirectView();
+		redirectView.setUrl("https://testingg.page.link/open");
+		return redirectView;
 	}
 	@PostMapping(path = "fcm_token")
 	public ResponseEntity<Object> fcm(
@@ -148,11 +161,14 @@ public class RegistrationController {
 			@RequestParam("user_email") String email) {
 		AppUser user = appUserRepository.findByEmail(email).get();
 		return appUserService.addToken(fcmToken, user);
+
 	}
 	@PostMapping(path = "remove_fcm_token")
-	public ResponseEntity<Object> remove_fcm(@RequestParam("user_email") String email) {
+	public ResponseEntity<Object> remove_fcm(
+			@RequestParam("user_email") String email) {
 		AppUser user = appUserRepository.findByEmail(email).get();
 		return appUserService.removeToken(user);
+
 	}
 	@GetMapping(path = "allUsers")
 	public ResponseEntity<Object> allusers() {
@@ -171,7 +187,7 @@ public class RegistrationController {
 	public Optional<AppUser> loadUserByphonetransfer(@RequestParam("phone_number") String phone_number) {
 		return appUserService.loadUserByPhoneNumbertransfer(phone_number);
 	}
-	
+
 	@GetMapping("verifypn")
 	public Boolean loadUserByphonee(@RequestParam("phone_number") String phone_number) {
 		return appUserService.loadUserByPhoneNumberr(phone_number);
@@ -185,113 +201,113 @@ public class RegistrationController {
 		if (user.isPresent()) {
 			return true;
 		}
-					
+
 		return false;
 	}
-	
+
 	@GetMapping("verifyEmail")
 	public Boolean existEmail(@RequestParam("email") String email) {
 		Optional<AppUser> user = appUserRepository.findByEmail(email);
 		if (user.isPresent()) {
 			return true;
 		}
-					
+
 		return false;
 	}
-	
-	
+
+
 	@GetMapping("test")
 	public String test() {
 		return "working";
 	}
-	
+
 	@PutMapping("retierSolde")
 	public String retierSolde(@RequestParam("phone_number") String phone_number,@RequestParam("montant") double montant){
 		return appUserService.retierSolde(phone_number,montant);
 	}
-	
+
 	public static SecretKey parseSecretKey(String secretKey) throws ParseException {
 		return new SecretKeySpec(stringToByteArray(secretKey), "AES");
 	}
-	
-	 public static byte[] hexStringToByteArray(String s) {
-	        int len = s.length();
-	        byte[] data = new byte[len / 2];
-	        for (int i = 0; i < len; i += 2) {
-	            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-	                                 + Character.digit(s.charAt(i+1), 16));
-	        }
-	        return data;
-	    }
-	 public static byte[] stringToByteArray(String hexaString) throws ParseException {
-			// the padding shouldn't be used, so a random one was chosen
-			return stringToByteArray(hexaString, hexaString.length() / 2, (byte) 0xFF);
-		}
 
-	 public static byte[] stringToByteArray(String hexaString, int resultArraySize, byte padding) throws ParseException {
-			final int HEXA_RADIX = 36;
-			int length = hexaString.length();
-			if (length % 2 == 0) {
-				length /= 2;
-				if (length <= resultArraySize) {
-					byte[] numbers = new byte[resultArraySize];
-					int i;
-					// filling the array
-					for (i = 0; i < length; i++) {
-						// the following line will trigger a NumberFormatException if str contains a non
-						// 0-9 A-F character
-						try {
-							int j = Integer.parseInt(hexaString.substring(2 * i, 2 * i + 2), HEXA_RADIX);
-							numbers[i] = (byte) (j & 0xFF);
-						} catch (NumberFormatException ex) {
-							throw new ParseException(ex.getMessage(), i);
-						}
-					}
-					// padding
-					for (; i < resultArraySize; i++) {
-						numbers[i] = padding;
-					}
-					return numbers;
-				} else {
-					throw new ParseException(
-							"the resulting array size is too big compared to the min size specified in the parameters", 0);
-				}
-			} else {
-				throw new ParseException("string length must be even", 0);
-			}
+	public static byte[] hexStringToByteArray(String s) {
+		int len = s.length();
+		byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2) {
+			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+					+ Character.digit(s.charAt(i+1), 16));
 		}
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-		
+		return data;
+	}
+	public static byte[] stringToByteArray(String hexaString) throws ParseException {
+		// the padding shouldn't be used, so a random one was chosen
+		return stringToByteArray(hexaString, hexaString.length() / 2, (byte) 0xFF);
+	}
+
+	public static byte[] stringToByteArray(String hexaString, int resultArraySize, byte padding) throws ParseException {
+		final int HEXA_RADIX = 36;
+		int length = hexaString.length();
+		if (length % 2 == 0) {
+			length /= 2;
+			if (length <= resultArraySize) {
+				byte[] numbers = new byte[resultArraySize];
+				int i;
+				// filling the array
+				for (i = 0; i < length; i++) {
+					// the following line will trigger a NumberFormatException if str contains a non
+					// 0-9 A-F character
+					try {
+						int j = Integer.parseInt(hexaString.substring(2 * i, 2 * i + 2), HEXA_RADIX);
+						numbers[i] = (byte) (j & 0xFF);
+					} catch (NumberFormatException ex) {
+						throw new ParseException(ex.getMessage(), i);
+					}
+				}
+				// padding
+				for (; i < resultArraySize; i++) {
+					numbers[i] = padding;
+				}
+				return numbers;
+			} else {
+				throw new ParseException(
+						"the resulting array size is too big compared to the min size specified in the parameters", 0);
+			}
+		} else {
+			throw new ParseException("string length must be even", 0);
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
