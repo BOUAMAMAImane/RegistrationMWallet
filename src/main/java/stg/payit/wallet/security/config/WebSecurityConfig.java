@@ -17,32 +17,37 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 import stg.payit.wallet.appuser.AppUserService;
+import stg.payit.wallet.email.EmailService;
 import stg.payit.wallet.security.filters.CustomAccessDeniedHandler;
 import stg.payit.wallet.security.filters.CustomAuthenticationFailureHandler;
 import stg.payit.wallet.security.filters.JwtAuthenticationFilter;
+
 @Configuration
 @AllArgsConstructor
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
     private final AppUserService appUserService;
+    private EmailService emailService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-    	
+
         http.csrf().disable();
         http.headers().frameOptions().disable();
         http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
         http.authorizeRequests().antMatchers("/login/**").permitAll();
-     
+
         http
                 .csrf().disable()
                 .authorizeRequests()
-                    .antMatchers("/registration/**")
-                    .permitAll()
+                .antMatchers("/registration/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated();
-        http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
+//        http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager(), appUserService,emailService));
 
     }
 
@@ -59,16 +64,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         provider.setUserDetailsService(appUserService);
         return provider;
     }
-    
+
     @Bean
     public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
-    	
+        return super.authenticationManagerBean();
     }
 
-    
+
     @Bean
     public static NoOpPasswordEncoder passwordEncoderr() {
-      return (NoOpPasswordEncoder) NoOpPasswordEncoder.getInstance();
+        return (NoOpPasswordEncoder) NoOpPasswordEncoder.getInstance();
     }
 }

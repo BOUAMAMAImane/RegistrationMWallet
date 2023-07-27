@@ -47,7 +47,7 @@ public class AppUserService implements UserDetailsService {
                         new UsernameNotFoundException(
                                 String.format(USER_NOT_FOUND_MSG, phone_number)));
     }
-    
+
     public ResponseEntity<Object> loadUserByemail(String email)
             throws UsernameNotFoundException {
         return ResponseHandler.generateResponse("user found ", HttpStatus.OK,
@@ -61,7 +61,7 @@ public class AppUserService implements UserDetailsService {
     public ResponseEntity<Object> loadUserByPhoneNumber(String phone_number)
 
             {
-         
+
         		Optional<AppUser> usr = appUserRepository.findByPhoneNumber(phone_number);
         		if(usr.isPresent())
         		{	return ResponseHandler.generateResponse("user found", HttpStatus.OK, usr);}
@@ -69,15 +69,21 @@ public class AppUserService implements UserDetailsService {
         			return ResponseHandler.generateResponse("user not found", HttpStatus.OK, usr);
     }
     public Optional<AppUser> loadUserByPhoneNumbertransfer(String phone_number)
-
     {
- 
 		Optional<AppUser> usr = appUserRepository.findByPhoneNumber(phone_number);
 		if(usr.isPresent())
 		{	return usr;}
 		else 
 			return usr;
     }
+	public Optional<String> findDeviceIdByPhoneNumber(String phoneNumber) {
+		return appUserRepository.findDeviceIdByPhoneNumber(phoneNumber);
+
+
+	}
+	public Optional<String> getEmailByPhoneNumber(String phoneNumber) {
+		return appUserRepository.findEmailByPhoneNumber(phoneNumber);
+	}
     public boolean loadUserByPhoneNumberr(String phone_number)
     {
  
@@ -150,14 +156,11 @@ public class AppUserService implements UserDetailsService {
     	appUserRepository.save(user);
     	return ResponseHandler.generateResponseString("Token Removed", HttpStatus.OK);
 	}
-    
+
     public ResponseEntity<Object> getUsers() {
     	
 			List<AppUser>users= appUserRepository.finAllUsers();
 			 return ResponseHandler.generateResponse("all users", HttpStatus.OK, users)	;
-		
-    	
-    	
     }
 
 	public String retierSolde(String phone_number, double montant) {

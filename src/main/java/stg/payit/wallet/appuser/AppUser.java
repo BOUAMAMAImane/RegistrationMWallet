@@ -19,10 +19,12 @@ import javax.persistence.*;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 
-@Data
+
 @EqualsAndHashCode
 @NoArgsConstructor
+@Data
 @Entity
 public class AppUser implements UserDetails {
 	@SequenceGenerator(name = "student_sequence", sequenceName = "student_sequence", allocationSize = 1)
@@ -43,7 +45,13 @@ public class AppUser implements UserDetails {
 	private double solde;
 	//@Column(unique = true)
 //	private String rib;
+	@Column(unique = true)
+	private String deviceId; // ID du téléphone
 
+	private String longitude;
+	private String Latitude;// Localisation
+
+	private Date loginTime;
 	@JsonIgnore
 	private String password;
 	@Enumerated(EnumType.STRING)
@@ -53,7 +61,7 @@ public class AppUser implements UserDetails {
 	private Boolean enabled = false;
 	private String gender;
 	public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole,
-			String phoneNumber,String cin, String gender) {
+			String phoneNumber,String cin, String gender, String deviceId, String longitude,String latitude, Date loginTime) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
@@ -65,6 +73,10 @@ public class AppUser implements UserDetails {
 		this.solde = 0;		
 		this.cin = cin;
 		this.gender=gender;
+		this.deviceId = deviceId;
+		this.longitude = longitude;
+		this.Latitude=latitude;
+		this.loginTime = loginTime;
 	}
 
 	@Override

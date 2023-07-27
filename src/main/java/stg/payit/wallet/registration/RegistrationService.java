@@ -35,8 +35,7 @@ public class RegistrationService {
 			return ResponseHandler.generateResponseString("Email Not Valid", HttpStatus.OK);
 		}
 		AppUser user = new AppUser(request.getFirstName(), request.getLastName(), request.getEmail(),
-				request.getPassword(), AppUserRole.USER,request.getPhoneNumber(),request.getCin(),request.getGender()
-		);
+				request.getPassword(), AppUserRole.USER,request.getPhoneNumber(),request.getCin(),request.getGender(),request.getDeviceId(),request.getLongitude(),request.getLatitude(),request.getLoginTime());
 		String token = appUserService.signUpUser(user);
 		String link = "http://192.168.1.38:8040/wallet_war/registration/confirm?token=" + token;
 		emailSender.send(request.getEmail(), buildEmail(request.getFirstName(), link));

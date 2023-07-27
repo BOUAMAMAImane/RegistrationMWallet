@@ -28,9 +28,9 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
+     <dependency>
 
-  <dependency>
-      <groupId>org.projectlombok</groupId>
+	  <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <optional>true</optional>
     </dependency>
@@ -44,6 +44,12 @@
 			<artifactId>spring-boot-starter-tomcat</artifactId>
 			<scope>provided</scope>
 		</dependency>
+<!--//pour geocodage-->
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>4.5.13</version> <!-- Utilisez la version la plus récente -->
+			</dependency>
 
 		<dependency>
 			<groupId>com.h2database</groupId>

@@ -37,4 +37,20 @@ public class EmailService implements EmailSender{
             throw new IllegalStateException("failed to send email");
         }
     }
+    @Async
+    public void sendNotification(String to, String message) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(mimeMessage, "utf-8");
+            helper.setText(message, true);
+            helper.setTo(to);
+            helper.setSubject("Notification: Login Attempt from New Device");
+            helper.setFrom("noreply.payit@gmail.com");
+            mailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            LOGGER.error("failed to send notification email", e);
+            throw new IllegalStateException("failed to send notification email");
+        }
+    }
 }

@@ -5,6 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.Date;
+
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode
@@ -18,5 +20,9 @@ public class RegistrationRequest {
     private final String cin;
     private final String gender;
     private final String newPassword;
+    private final String deviceId; // ID du téléphone
+    private final String longitude;
+    private final String Latitude;// Localisation
+    private Date loginTime;
     
 }
