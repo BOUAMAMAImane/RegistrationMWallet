@@ -40,6 +40,10 @@ import stg.payit.wallet.responseHandler.ResponseHandler;
 import stg.payit.wallet.security.filters.JwtAuthenticationFilter;
 
 
+
+
+
+
 @RestController
 @CrossOrigin("*")
 @RequestMapping(path = "registration")
@@ -61,6 +65,7 @@ public class RegistrationController {
 
 		return registrationService.register(request);
 	}
+<<<<<<< HEAD
 	@GetMapping("/confirmer-identite")
 	public ResponseEntity<String> confirmerIdentite(@RequestParam("reponse") String reponse) {
 		CompletableFuture<String> userResponseFuture = new CompletableFuture<>();
@@ -87,10 +92,14 @@ public class RegistrationController {
 			return ResponseEntity.ok("Vous avez répondu : " + reponseUtilisateur);
 		}
 	}
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
 
 	@GetMapping("sessionId")
 	public String sessionIds() throws ParseException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+
+
 
 		String sessionid = RequestContextHolder.currentRequestAttributes().getSessionId();
 
@@ -110,7 +119,13 @@ public class RegistrationController {
 		System.out.println("------------------ENCRYPTE MESSAGE ---------------");
 		System.out.println(encryptedValue);
 		return encryptedValue + "---------"+sessionid;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	}
+
+
 	@GetMapping("session")
 	public String sessionId(HttpServletRequest request) throws ParseException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		//HttpSession session = request.getSession();
@@ -225,6 +240,11 @@ public class RegistrationController {
 
 		return false;
 	}
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	@GetMapping("test")
 	public String test() {
 		return "working";
@@ -286,4 +306,40 @@ public class RegistrationController {
 		}
 	}
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 }

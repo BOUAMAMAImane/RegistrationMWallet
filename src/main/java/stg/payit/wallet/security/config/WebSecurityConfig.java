@@ -43,8 +43,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
         http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
         http.authorizeRequests().antMatchers("/login/**").permitAll();
+<<<<<<< HEAD
         http.authorizeRequests().antMatchers( "/api/users/**").permitAll();
 
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
         http
                 .csrf().disable()
@@ -54,7 +57,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated();
 //        http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
+<<<<<<< HEAD
         http.addFilter(new JwtAuthenticationFilter(authenticationManager(), appUserService,emailService,userConfirmation));
+=======
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager(), appUserService));
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
     }
 
@@ -71,6 +78,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         provider.setUserDetailsService(appUserService);
         return provider;
     }
+<<<<<<< HEAD
 /*    @Bean
     @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
    public UserConfirmation userConfirmation() {
@@ -79,6 +87,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
+=======
+
+    @Bean
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
     }
 
 

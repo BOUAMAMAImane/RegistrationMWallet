@@ -14,7 +14,13 @@ import stg.payit.wallet.device.Device;
 import javax.persistence.*;
 
 import java.security.SecureRandom;
+<<<<<<< HEAD
 import java.util.*;
+=======
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
 
 @EqualsAndHashCode
@@ -40,11 +46,19 @@ public class AppUser implements UserDetails {
 	private double solde;
 	//@Column(unique = true)
 //	private String rib;
+<<<<<<< HEAD
 /*	@Column(unique = true)
 	private String deviceId; // ID du téléphone*/
 
 	private String longitude;
 	private String Latitude;
+=======
+	@Column(unique = true)
+	private String deviceId; // ID du téléphone
+
+	private String longitude;
+	private String Latitude;// Localisation
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
 	private Date loginTime;
 	@JsonIgnore
@@ -83,6 +97,10 @@ public class AppUser implements UserDetails {
 //		this.deviceId=deviceId;this.longitude = longitude;
 //		this.Latitude=latitude;
 //		this.loginTime = loginTime;
+		this.deviceId = deviceId;
+		this.longitude = longitude;
+		this.Latitude=latitude;
+		this.loginTime = loginTime;
 	}
 
 	@Override

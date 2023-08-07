@@ -10,8 +10,15 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
+<<<<<<< HEAD
 import java.util.*;
 import java.util.concurrent.*;
+=======
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 import java.util.stream.Collectors;
 
 import javax.crypto.BadPaddingException;
@@ -27,7 +34,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+<<<<<<< HEAD
 import com.fasterxml.jackson.databind.JsonNode;
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 import lombok.NoArgsConstructor;
 import org.apache.catalina.connector.Response;
 import org.apache.commons.codec.binary.Base64;
@@ -61,6 +71,7 @@ import lombok.AllArgsConstructor;
 import stg.payit.wallet.appuser.AppUser;
 import stg.payit.wallet.appuser.AppUserRepository;
 import stg.payit.wallet.appuser.AppUserService;
+<<<<<<< HEAD
 import stg.payit.wallet.appuser.UserConfirmation;
 import stg.payit.wallet.email.EmailService;
 
@@ -68,10 +79,15 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 @Scope("request")
+=======
+
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 	private static final String CIPHER_ALGORITHM = "AES/CBC/ISO10126PADDING";
 	static byte[] iv = hexStringToByteArray("48E53E0639A76C5A5E0C5BC9E3A91538");
+<<<<<<< HEAD
 	private final AppUserService appUserService;
 	private final AuthenticationManager authenticationManager;
 	private final EmailService emailService;
@@ -85,6 +101,22 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		this.isConfirmationReceived = false;
 		this.userConfirmation=userConfirmation;
 	}
+=======
+
+	private final AppUserService appUserService;
+	private final AuthenticationManager authenticationManager;
+
+	public JwtAuthenticationFilter(AuthenticationManager authenticationManager, AppUserService appUserService) {
+		this.authenticationManager = authenticationManager;
+		this.appUserService = appUserService;
+	}
+
+
+	/*private AuthenticationManager authenticationManager;
+	public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+		super();
+		this.authenticationManager = authenticationManager;
+	}*/
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
@@ -92,6 +124,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		String phone_number = request.getParameter("phoneNumber");
 		String password = request.getParameter("password");
 		String currentDeviceId = request.getParameter("deviceId");
+<<<<<<< HEAD
 		double latitude = Double.parseDouble(request.getParameter("latitude"));
 		double longitude = Double.parseDouble(request.getParameter("longitude"));
 
@@ -111,7 +144,21 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			confirmUserResponse();
 			appUserService.addDeviceByPhoneNumber(phone_number, currentDeviceId);
 		}
+		System.out.println("Current Device ID: " + currentDeviceId);
 
+		// Récupérer le deviceId de l'utilisateur en utilisant le numéro de téléphone
+
+		Optional<String> storedDeviceIdOptional = appUserService.findDeviceIdByPhoneNumber(phone_number);
+		String storedDeviceId = storedDeviceIdOptional.orElse("valeur_par_defaut");
+
+		// Comparer les deviceId
+		if (currentDeviceId.equals(storedDeviceId)) {
+			// Les deviceId correspondent, afficher un message
+			System.out.println("Le deviceId correspond. Utilisateur authentifié.");
+		} else {
+			// Les deviceId ne correspondent pas, afficher un autre message
+			System.out.println("Le deviceId ne correspond pas. Veuillez vous authentifier.");
+		}
 		String session = request.getSession().getAttribute("uuid").toString();
 		byte[] decodedKey = new Base64(true).decode(session);
 		Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
@@ -119,6 +166,20 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		String ss = new String(s);
 		if (ss.contains("/")) {
 			ss = ss.replaceAll("/", "B");
+		if(ss.contains("/"))
+		{
+			ss = ss.replaceAll("/", "B");
+		}
+		String pwd = decrypt(password,ss);
+		System.out.println(pwd);
+		UsernamePasswordAuthenticationToken authenticationToken=null;
+
+		try {
+			authenticationToken =
+					new UsernamePasswordAuthenticationToken(phone_number,pwd);
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
 		}
 		String pwd = decrypt(password, ss);
 		System.out.println(pwd);
@@ -128,6 +189,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
 		return authenticationManager.authenticate(authenticationToken);
 	}
+<<<<<<< HEAD
 
 	private void confirmUserResponse() {
 		CompletableFuture<String> userResponseFuture = userConfirmation.getUserResponseAsync();
@@ -205,6 +267,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			return "Adresse non disponible";
 		}
 	}
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	@Override
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 											Authentication authResult) throws IOException, ServletException {
@@ -226,11 +290,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		resp.put("status",200);
 		resp.put("message", "Login Successful");
 		new ObjectMapper().writeValue(response.getOutputStream(), resp);
+<<<<<<< HEAD
 
 	}
 
 
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 
+	}
 	public static String decrypt(String data) throws ParseException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException {
 
 
@@ -272,6 +340,10 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		return new String(decrypted);
 	}
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	//********************************************************************************************************//
 	public static SecretKey parseSecretKey(String secretKey) throws ParseException {
 		return new SecretKeySpec(stringToByteArray(secretKey), "AES");
@@ -289,6 +361,10 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		// the padding shouldn't be used, so a random one was chosen
 		return stringToByteArray(hexaString, hexaString.length() / 2, (byte) 0xFF);
 	}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	public static byte[] stringToByteArray(String hexaString, int resultArraySize, byte padding) throws ParseException {
 		final int HEXA_RADIX = 36;
 		int length = hexaString.length();

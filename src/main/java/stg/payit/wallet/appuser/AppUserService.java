@@ -42,6 +42,7 @@ public class AppUserService implements UserDetailsService {
                         new UsernameNotFoundException(
                                 String.format(USER_NOT_FOUND_MSG, phone_number)));
     }
+<<<<<<< HEAD
 	public void addDeviceByPhoneNumber(String phoneNumber, String newDeviceId) {
 		Optional<AppUser> optionalUser = appUserRepository.findByPhoneNumber(phoneNumber);
 		if (optionalUser.isPresent()) {
@@ -60,6 +61,13 @@ public class AppUserService implements UserDetailsService {
 		}
 	}
 
+=======
+	public Optional<String> findDeviceIdByPhoneNumber(String phoneNumber) {
+		return appUserRepository.findDeviceIdByPhoneNumber(phoneNumber);
+	}
+
+
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
 	public ResponseEntity<Object> loadUserByemail(String email)
             throws UsernameNotFoundException {
         return ResponseHandler.generateResponse("user found ", HttpStatus.OK,
@@ -73,7 +81,10 @@ public class AppUserService implements UserDetailsService {
     public ResponseEntity<Object> loadUserByPhoneNumber(String phone_number)
 
             {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
         		Optional<AppUser> usr = appUserRepository.findByPhoneNumber(phone_number);
         		if(usr.isPresent())
         		{	return ResponseHandler.generateResponse("user found", HttpStatus.OK, usr);}
