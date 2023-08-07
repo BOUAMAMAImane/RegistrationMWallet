@@ -7,6 +7,7 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.crypto.BadPaddingException;
@@ -22,16 +23,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -39,26 +34,24 @@ import lombok.AllArgsConstructor;
 import stg.payit.wallet.appuser.AppUser;
 import stg.payit.wallet.appuser.AppUserRepository;
 import stg.payit.wallet.appuser.AppUserService;
+import stg.payit.wallet.appuser.UserConfirmation;
 import stg.payit.wallet.registration.RegistrationService;
 import stg.payit.wallet.responseHandler.ResponseHandler;
-
-
-
+import stg.payit.wallet.security.filters.JwtAuthenticationFilter;
 
 
 @RestController
 @CrossOrigin("*")
 @RequestMapping(path = "registration")
-
 @AllArgsConstructor
 public class RegistrationController {
 	private static final String CIPHER_ALGORITHM = "AES/CBC/ISO10126PADDING";
 	static byte[] iv = hexStringToByteArray("48E53E0639A76C5A5E0C5BC9E3A91538");
 	private List<String> activeDeviceIds = new ArrayList<>();
-
 	private final RegistrationService registrationService;
 	private final AppUserRepository appUserRepository;
 	private final AppUserService appUserService;
+	private UserConfirmation userConfirmation = new UserConfirmation();
 
 	@PostMapping
 	public ResponseEntity<Object> register(@RequestBody RegistrationRequest request) {
@@ -68,31 +61,36 @@ public class RegistrationController {
 
 		return registrationService.register(request);
 	}
-	/*
-	Blocage se session
-	private boolean isDeviceIdAlreadyLoggedIn(String deviceId) {
-		return activeDeviceIds.contains(deviceId);
-	}
-	@PostMapping("/blockSession")
-	public ResponseEntity<Object> blockSession(@RequestParam("deviceId") String deviceId) {
-		// Vérifier si l'ID du device est déjà connecté
-		if (isDeviceIdAlreadyLoggedIn(deviceId)) {
-			// Bloquer la session de l'utilisateur en supprimant son deviceId
-			activeDeviceIds.remove(deviceId);
-			// Répondre avec un message indiquant que la session est bloquée avec succès
-			return ResponseHandler.generateResponseString("Session blocked for device: " + deviceId, HttpStatus.OK);
+	@GetMapping("/confirmer-identite")
+	public ResponseEntity<String> confirmerIdentite(@RequestParam("reponse") String reponse) {
+		CompletableFuture<String> userResponseFuture = new CompletableFuture<>();
+
+		userConfirmation.setUserResponseAsync(userResponseFuture);
+
+		userResponseFuture.complete(reponse);
+		System.out.println("Réponse de l'utilisateur stockée : " + userConfirmation.getUserResponse());
+
+		if ("oui".equalsIgnoreCase(reponse)) {
+			return ResponseEntity.ok("Merci pour la confirmation. Vous pouvez maintenant accéder à l'application depuis le nouvel appareil.");
 		} else {
-			// Répondre avec un message indiquant que l'utilisateur n'est pas connecté
-			return ResponseHandler.generateResponseString("User is not logged in from device: " + deviceId, HttpStatus.BAD_REQUEST);
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Accès refusé. Votre identité n'a pas été confirmée.");
 		}
 	}
-*/
+	@GetMapping("/recuperer-reponse")
+	public ResponseEntity<String> recupererReponse() {
+		// Récupérer la réponse stockée dans UserConfirmation
+		String reponseUtilisateur = userConfirmation.getUserResponse();
+		// Vérifier la réponse pour décider du message à renvoyer
+		if ("oui".equalsIgnoreCase(reponseUtilisateur)) {
+			return ResponseEntity.ok("Vous avez répondu : oui");
+		} else {
+			return ResponseEntity.ok("Vous avez répondu : " + reponseUtilisateur);
+		}
+	}
 
 
 	@GetMapping("sessionId")
 	public String sessionIds() throws ParseException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-
-
 
 		String sessionid = RequestContextHolder.currentRequestAttributes().getSessionId();
 
@@ -227,8 +225,6 @@ public class RegistrationController {
 
 		return false;
 	}
-
-
 	@GetMapping("test")
 	public String test() {
 		return "working";
@@ -289,38 +285,5 @@ public class RegistrationController {
 			throw new ParseException("string length must be even", 0);
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

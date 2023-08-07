@@ -1,6 +1,7 @@
 package stg.payit.wallet.appuser;
 
 import lombok.AllArgsConstructor;
+import stg.payit.wallet.device.Device;
 import stg.payit.wallet.email.EmailSender;
 import stg.payit.wallet.registration.EmailValidator;
 import stg.payit.wallet.registration.RegistrationRequest;
@@ -8,25 +9,19 @@ import stg.payit.wallet.registration.token.ConfirmationToken;
 import stg.payit.wallet.registration.token.ConfirmationTokenService;
 import stg.payit.wallet.responseHandler.ResponseHandler;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -39,7 +34,7 @@ public class AppUserService implements UserDetailsService {
     private final ConfirmationTokenService confirmationTokenService;
     private final EmailValidator emailValidator;
 	private final EmailSender emailSender;
-    @Override
+   @Override
     public UserDetails loadUserByUsername(String phone_number)
             throws UsernameNotFoundException {
         return appUserRepository.findByPhoneNumber(phone_number)
@@ -47,8 +42,25 @@ public class AppUserService implements UserDetailsService {
                         new UsernameNotFoundException(
                                 String.format(USER_NOT_FOUND_MSG, phone_number)));
     }
+	public void addDeviceByPhoneNumber(String phoneNumber, String newDeviceId) {
+		Optional<AppUser> optionalUser = appUserRepository.findByPhoneNumber(phoneNumber);
+		if (optionalUser.isPresent()) {
+			AppUser user = optionalUser.get();
+			Device newDevice = new Device();
+			newDevice.setDeviceId(newDeviceId);
+			user.addDevice(newDevice);
+			appUserRepository.save(user);
+		} else {
+			throw new UserNotFoundException("User not found with phone number: " + phoneNumber);
+		}
+	}
+	public class UserNotFoundException extends RuntimeException {
+		public UserNotFoundException(String message) {
+			super(message);
+		}
+	}
 
-    public ResponseEntity<Object> loadUserByemail(String email)
+	public ResponseEntity<Object> loadUserByemail(String email)
             throws UsernameNotFoundException {
         return ResponseHandler.generateResponse("user found ", HttpStatus.OK,
         		appUserRepository.findByEmail(email)); 
@@ -68,7 +80,7 @@ public class AppUserService implements UserDetailsService {
         		else 
         			return ResponseHandler.generateResponse("user not found", HttpStatus.OK, usr);
     }
-    public Optional<AppUser> loadUserByPhoneNumbertransfer(String phone_number)
+	public Optional<AppUser> loadUserByPhoneNumbertransfer(String phone_number)
     {
 		Optional<AppUser> usr = appUserRepository.findByPhoneNumber(phone_number);
 		if(usr.isPresent())
@@ -76,10 +88,51 @@ public class AppUserService implements UserDetailsService {
 		else 
 			return usr;
     }
-	public Optional<String> findDeviceIdByPhoneNumber(String phoneNumber) {
+/*	public Optional<String> findDeviceIdByPhoneNumber(String phoneNumber) {
 		return appUserRepository.findDeviceIdByPhoneNumber(phoneNumber);
 
+	}*/
+	/*public void addDeviceId(String phoneNumber, String newDeviceId) {
+		// Récupérer l'utilisateur par son numéro de téléphone
+		Optional<AppUser> userOptional = appUserRepository.findByPhoneNumber(phoneNumber);
 
+		if (userOptional.isPresent()) {
+			// Ajouter le nouveau deviceId à la liste existante
+			AppUser user = userOptional.get();
+			List<String> deviceIds = user.getDeviceIds();
+			deviceIds.add(newDeviceId);
+			user.setDeviceIds(deviceIds);
+
+			// Sauvegarder les modifications dans la base de données
+			appUserRepository.save(user);}*/
+/*
+			// Retourner une réponse avec le nouveau deviceId ajouté
+			return ResponseHandler.generateResponseString("DeviceId ajouté avec succès", HttpStatus.OK);
+		} else {
+			// Si l'utilisateur n'existe pas, retourner une réponse d'erreur
+			return ResponseHandler.generateResponseString("Utilisateur introuvable", HttpStatus.NOT_FOUND);
+		}*/
+
+
+
+/*	public Optional<List<String>> findDeviceIdByPhoneNumber(String phoneNumber) {
+		return appUserRepository.findDeviceIdByPhoneNumber(phoneNumber);
+	}*/
+	public List<String> findDeviceIdByPhoneNumber(String phoneNumber) {
+		return appUserRepository.findDeviceIdByPhoneNumber(phoneNumber);
+	}
+	public void addDeviceToUser(String phoneNumber, Device device) {
+		// Chercher l'utilisateur par son numéro de téléphone
+		Optional<AppUser> userOptional = appUserRepository.findByPhoneNumber(phoneNumber);
+		if (userOptional.isPresent()) {
+			AppUser user = userOptional.get();
+			List<Device> devices = user.getDevices();
+			devices.add(device);
+			user.setDevices(devices);
+			appUserRepository.save(user);
+		} else {
+			throw new EntityNotFoundException("User not found with phone number: " + phoneNumber);
+		}
 	}
 	public Optional<String> getEmailByPhoneNumber(String phoneNumber) {
 		return appUserRepository.findEmailByPhoneNumber(phoneNumber);

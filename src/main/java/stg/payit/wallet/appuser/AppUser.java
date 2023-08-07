@@ -1,25 +1,20 @@
 package stg.payit.wallet.appuser;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import net.bytebuddy.utility.RandomString;
 
-import org.hibernate.annotations.Type;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import stg.payit.wallet.device.Device;
 
 import javax.persistence.*;
 
 import java.security.SecureRandom;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
+import java.util.*;
 
 
 @EqualsAndHashCode
@@ -29,8 +24,8 @@ import java.util.Date;
 public class AppUser implements UserDetails {
 	@SequenceGenerator(name = "student_sequence", sequenceName = "student_sequence", allocationSize = 1)
 	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "student_sequence")
 	@JsonIgnore
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "student_sequence")
 	private Long id;
 	private String email;
 	@Column(unique = true)
@@ -45,11 +40,11 @@ public class AppUser implements UserDetails {
 	private double solde;
 	//@Column(unique = true)
 //	private String rib;
-	@Column(unique = true)
-	private String deviceId; // ID du téléphone
+/*	@Column(unique = true)
+	private String deviceId; // ID du téléphone*/
 
 	private String longitude;
-	private String Latitude;// Localisation
+	private String Latitude;
 
 	private Date loginTime;
 	@JsonIgnore
@@ -60,6 +55,18 @@ public class AppUser implements UserDetails {
 	private Boolean locked = false;
 	private Boolean enabled = false;
 	private String gender;
+
+
+//	@OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	@JsonIgnore
+	private List<Device> devices = new ArrayList<>();
+
+	public void addDevice(Device device) {
+		this.devices.add(device);
+		device.setAppUser(this);
+	}
 	public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole,
 			String phoneNumber,String cin, String gender, String deviceId, String longitude,String latitude, Date loginTime) {
 		this.firstName = firstName;
@@ -73,10 +80,9 @@ public class AppUser implements UserDetails {
 		this.solde = 0;		
 		this.cin = cin;
 		this.gender=gender;
-		this.deviceId = deviceId;
-		this.longitude = longitude;
-		this.Latitude=latitude;
-		this.loginTime = loginTime;
+//		this.deviceId=deviceId;this.longitude = longitude;
+//		this.Latitude=latitude;
+//		this.loginTime = loginTime;
 	}
 
 	@Override

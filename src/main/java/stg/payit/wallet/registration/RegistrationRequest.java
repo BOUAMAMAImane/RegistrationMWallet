@@ -22,7 +22,7 @@ public class RegistrationRequest {
     private final String newPassword;
     private final String deviceId; // ID du téléphone
     private final String longitude;
-    private final String Latitude;// Localisation
+    private final String Latitude;
     private Date loginTime;
     
 }

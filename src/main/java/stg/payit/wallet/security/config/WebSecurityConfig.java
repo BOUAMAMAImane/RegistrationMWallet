@@ -1,6 +1,8 @@
 package stg.payit.wallet.security.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 import stg.payit.wallet.appuser.AppUserService;
+import stg.payit.wallet.appuser.UserConfirmation;
 import stg.payit.wallet.email.EmailService;
 import stg.payit.wallet.security.filters.CustomAccessDeniedHandler;
 import stg.payit.wallet.security.filters.CustomAuthenticationFailureHandler;
@@ -29,6 +32,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final AppUserService appUserService;
     private EmailService emailService;
+    private UserConfirmation userConfirmation;
+
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Override
@@ -38,6 +43,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
         http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
         http.authorizeRequests().antMatchers("/login/**").permitAll();
+        http.authorizeRequests().antMatchers( "/api/users/**").permitAll();
+
 
         http
                 .csrf().disable()
@@ -47,7 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated();
 //        http.addFilter(new JwtAuthenticationFilter(authenticationManagerBean()));
-        http.addFilter(new JwtAuthenticationFilter(authenticationManager(), appUserService,emailService));
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager(), appUserService,emailService,userConfirmation));
 
     }
 
@@ -64,7 +71,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         provider.setUserDetailsService(appUserService);
         return provider;
     }
-
+/*    @Bean
+    @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
+   public UserConfirmation userConfirmation() {
+        return new UserConfirmation();
+   }*/
     @Bean
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();

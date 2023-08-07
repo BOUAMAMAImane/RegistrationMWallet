@@ -1,10 +1,9 @@
 package stg.payit.wallet.registration;
 
 import lombok.AllArgsConstructor;
-import stg.payit.wallet.appuser.AppUser;
-import stg.payit.wallet.appuser.AppUserRepository;
-import stg.payit.wallet.appuser.AppUserRole;
-import stg.payit.wallet.appuser.AppUserService;
+import stg.payit.wallet.appuser.*;
+import stg.payit.wallet.device.Device;
+import stg.payit.wallet.device.DeviceRepository;
 import stg.payit.wallet.email.EmailSender;
 import stg.payit.wallet.registration.token.ConfirmationToken;
 import stg.payit.wallet.registration.token.ConfirmationTokenService;
@@ -17,8 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+
 @CrossOrigin("*")
 @Service
 @AllArgsConstructor
@@ -27,7 +25,9 @@ public class RegistrationService {
 	private final EmailValidator emailValidator;
 	private final ConfirmationTokenService confirmationTokenService;
 	private final EmailSender emailSender;
+	private final DeviceRepository deviceRepository;
 
+    @Transactional
 	public ResponseEntity<Object> register(RegistrationRequest request) {
 		boolean isValidEmail = emailValidator.test(request.getEmail());
 
@@ -37,8 +37,15 @@ public class RegistrationService {
 		AppUser user = new AppUser(request.getFirstName(), request.getLastName(), request.getEmail(),
 				request.getPassword(), AppUserRole.USER,request.getPhoneNumber(),request.getCin(),request.getGender(),request.getDeviceId(),request.getLongitude(),request.getLatitude(),request.getLoginTime());
 		String token = appUserService.signUpUser(user);
+
 		String link = "http://192.168.1.38:8040/wallet_war/registration/confirm?token=" + token;
 		emailSender.send(request.getEmail(), buildEmail(request.getFirstName(), link));
+
+		Device newDevice = new Device();
+		newDevice.setDeviceId(request.getDeviceId());
+		deviceRepository.save(newDevice);
+		user.addDevice(newDevice);
+
 
 		return ResponseHandler.generateResponse("Registrated!", HttpStatus.OK,user);
 	}
@@ -61,9 +68,6 @@ public class RegistrationService {
 		appUserService.enableAppUser(confirmationToken.getAppUser().getEmail());
 		return ResponseHandler.generateResponseString("Email Confirmed", HttpStatus.OK);
 	}
-		
-	
-	
 
 		private String buildEmail(String name, String link) {
 		return "\r\n"

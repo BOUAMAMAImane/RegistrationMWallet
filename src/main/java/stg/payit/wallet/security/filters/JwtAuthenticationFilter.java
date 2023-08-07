@@ -11,6 +11,7 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import javax.crypto.BadPaddingException;
@@ -24,17 +25,23 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NoArgsConstructor;
 import org.apache.catalina.connector.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.h2.util.json.JSONObject;
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -54,12 +61,13 @@ import lombok.AllArgsConstructor;
 import stg.payit.wallet.appuser.AppUser;
 import stg.payit.wallet.appuser.AppUserRepository;
 import stg.payit.wallet.appuser.AppUserService;
+import stg.payit.wallet.appuser.UserConfirmation;
 import stg.payit.wallet.email.EmailService;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-
+@Scope("request")
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 	private static final String CIPHER_ALGORITHM = "AES/CBC/ISO10126PADDING";
@@ -67,11 +75,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	private final AppUserService appUserService;
 	private final AuthenticationManager authenticationManager;
 	private final EmailService emailService;
+	private boolean isConfirmationReceived;
+	private UserConfirmation userConfirmation;
 
-	public JwtAuthenticationFilter(AuthenticationManager authenticationManager, AppUserService appUserService,EmailService emailService) {
+	public JwtAuthenticationFilter(AuthenticationManager authenticationManager, AppUserService appUserService,EmailService emailService,UserConfirmation userConfirmation) {
 		this.authenticationManager = authenticationManager;
 		this.appUserService = appUserService;
 		this.emailService = emailService;
+		this.isConfirmationReceived = false;
+		this.userConfirmation=userConfirmation;
 	}
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
@@ -80,22 +92,24 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		String phone_number = request.getParameter("phoneNumber");
 		String password = request.getParameter("password");
 		String currentDeviceId = request.getParameter("deviceId");
-		System.out.println("Current Device ID: " + currentDeviceId);
-		double latitude = 48.8588443;
-		double longitude = 2.2943516;
+		double latitude = Double.parseDouble(request.getParameter("latitude"));
+		double longitude = Double.parseDouble(request.getParameter("longitude"));
 
+		Optional<String> email = appUserService.getEmailByPhoneNumber(phone_number);
 		String address = getAddressFromCoordinates(latitude, longitude);
 		System.out.println("Adresse de l'utilisateur : " + address);
-		boolean deviceIdMatches = compareDeviceIds(currentDeviceId,phone_number);
+
+		String add=extractAddressInfo(address);
+		System.out.println("Adresse de l'utilisateur : " + add);
+
+		boolean deviceIdMatches = compareDeviceIds(currentDeviceId, phone_number);
 
 		// Comparer les deviceId
-		if (deviceIdMatches) {
-			System.out.println("Le deviceId correspond. Utilisateur authentifié.");
-		} else {
-
+		if (!deviceIdMatches) {
 			System.out.println("Le deviceId ne correspond pas. Veuillez vous authentifier.");
-			sendNotificationEmail(phone_number, latitude, longitude);
-
+			emailService.sendAuthenticationQuestionByEmail(email.orElse("adresse_email_par_defaut@example.com"),add);
+			confirmUserResponse();
+			appUserService.addDeviceByPhoneNumber(phone_number, currentDeviceId);
 		}
 
 		String session = request.getSession().getAttribute("uuid").toString();
@@ -103,180 +117,94 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		byte[] s = new Base64().encode(decodedKey);
 		String ss = new String(s);
-		if(ss.contains("/"))
-		{
+		if (ss.contains("/")) {
 			ss = ss.replaceAll("/", "B");
 		}
-		String pwd = decrypt(password,ss);
+		String pwd = decrypt(password, ss);
 		System.out.println(pwd);
-		UsernamePasswordAuthenticationToken authenticationToken=null;
 
-		try {
-			authenticationToken =
-					new UsernamePasswordAuthenticationToken(phone_number,pwd);
+		UsernamePasswordAuthenticationToken authenticationToken =
+				new UsernamePasswordAuthenticationToken(phone_number, pwd);
 
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
 		return authenticationManager.authenticate(authenticationToken);
 	}
 
-	private void sendNotificationEmail(String phoneNumber, double latitude, double longitude) {
-		// Récupérer l'adresse e-mail de l'utilisateur à partir du numéro de téléphone
-		Optional<String> emailOptional = appUserService.getEmailByPhoneNumber(phoneNumber);
-		String to = emailOptional.orElse("adresse_email_par_defaut@example.com"); // Valeur par défaut si l'e-mail n'est pas trouvé
+	private void confirmUserResponse() {
+		CompletableFuture<String> userResponseFuture = userConfirmation.getUserResponseAsync();
+		// Planifier l'expiration du CompletableFuture après 30 secondes
+		ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+		executorService.schedule(() -> {
+			if (!userResponseFuture.isDone()) {
+				// userConfirmation.resetUserResponse();
+				userResponseFuture.completeExceptionally(new TimeoutException("La réponse a expiré."));
+			}
+			executorService.shutdown();
+		}, 30, TimeUnit.SECONDS);
 
-		// Récupérer l'adresse de l'utilisateur à partir des coordonnées
-		String address = getAddressFromCoordinates(latitude, longitude);
+		try {
+			String userResponse = userResponseFuture.get(30, TimeUnit.SECONDS);
+			System.out.println("Réponse de l'utilisateur récupérée : " + userResponse);
+			userConfirmation.resetUserResponse();
 
-		String message = "Bonjour,\n\nIl semblerait qu'une tentative de connexion a été effectuée depuis un" +
-				" nouvel appareil. Si vous n'êtes pas à l'origine de cette connexion, veuillez prendre des mesures" +
-				" immédiates pour sécuriser votre compte.\n\nAdresse de l'utilisateur : " + address + "\n\nCordialement,\nPayit";
+			if (!"oui".equalsIgnoreCase(userResponse)) {
+				System.out.println("Accès refusé. Votre identité n'a pas été confirmée.");
+				throw new BadCredentialsException("Accès refusé. Votre identité n'a pas été confirmée.");
+			}
 
-		// Envoyer l'e-mail de notification
-		emailService.sendNotification(to, message);
+		} catch (TimeoutException e) {
+			System.out.println("Temps d'attente dépassé. L'utilisateur n'a pas répondu à temps.");
+			userConfirmation.resetUserResponse();
+			throw new BadCredentialsException("Temps d'attente dépassé. L'utilisateur n'a pas répondu à temps.");
+		} catch (InterruptedException | ExecutionException e) {
+			System.out.println("Une erreur s'est produite lors de l'attente de la réponse de l'utilisateur.");
+			throw new BadCredentialsException("Une erreur s'est produite lors de l'attente de la réponse de l'utilisateur.");
+		} finally {
+			executorService.shutdown();
+		}
 	}
-
 	private boolean compareDeviceIds(String currentDeviceId, String phoneNumber) {
 		// Récupérer le deviceId enregistré dans la base de données pour le numéro de téléphone donné
-		Optional<String> storedDeviceIdOptional = appUserService.findDeviceIdByPhoneNumber(phoneNumber);
-		String storedDeviceId = storedDeviceIdOptional.orElse("valeur_par_defaut");
+	List<String> storedDeviceIds = appUserService.findDeviceIdByPhoneNumber(phoneNumber);
 
 		// Comparer les deviceId
-		return currentDeviceId.equals(storedDeviceId);
+		return storedDeviceIds.contains(currentDeviceId);
+	}
+	private String extractAddressInfo(String json) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode rootNode = objectMapper.readTree(json);
+			JsonNode addressNode = rootNode.get("address");
+
+			String city = "Unknown City";
+			String state = "Unknown State";
+			String road = "Unknown Road";
+			String postcode = "Unknown Postcode";
+			String country = "Unknown Country";
+
+			if (addressNode != null) {
+				city = addressNode.get("city") != null ? addressNode.get("city").asText() : city;
+				state = addressNode.get("state") != null ? addressNode.get("state").asText() : state;
+				road = addressNode.get("road") != null ? addressNode.get("road").asText() : road;
+				postcode = addressNode.get("postcode") != null ? addressNode.get("postcode").asText() : postcode;
+				country = addressNode.get("country") != null ? addressNode.get("country").asText() : country;
+			}
+
+
+			return "Address: " + road + ", " + city + ", " + state + ", " + postcode + ", " + country;
+		} catch (Exception e) {
+			return "Adresse non disponible";
+		}
 	}
 
-	// Méthode pour obtenir l'adresse de l'utilisateur à partir des coordonnées
+
 	private String getAddressFromCoordinates(double latitude, double longitude) {
 		try {
-			return NominatimReverseGeocoder.getAddress(latitude, longitude);
+			String json = NominatimReverseGeocoder.getAddress(latitude, longitude);
+			return json;
 		} catch (IOException | URISyntaxException e) {
 			return "Adresse non disponible";
 		}
 	}
-/*	@Override
-	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws AuthenticationException {
-
-		String phone_number = request.getParameter("phoneNumber");
-		String password = request.getParameter("password");
-		String currentDeviceId = request.getParameter("deviceId");
-		System.out.println("Current Device ID: " + currentDeviceId);
-		double latitude = 48.8588443;
-		double longitude = 2.2943516;
-
-		String address = getAddressFromCoordinates(latitude, longitude);
-		System.out.println("Adresse de l'utilisateur : " + address);
-*//*
-		Optional<String> storedDeviceIdOptional = appUserService.findDeviceIdByPhoneNumber(phone_number);
-		String storedDeviceId = storedDeviceIdOptional.orElse("valeur_par_defaut");*//*
-		boolean deviceIdMatches = compareDeviceIds(currentDeviceId,phone_number);
-
-		// Comparer les deviceId
-		if (deviceIdMatches) {
-			// Les deviceId correspondent, afficher un message
-			System.out.println("Le deviceId correspond. Utilisateur authentifié.");
-		} else {
-
-			System.out.println("Le deviceId ne correspond pas. Veuillez vous authentifier.");
-			sendNotificationEmail(phone_number, latitude, longitude);
-//			// Envoyer un e-mail de notification à l'utilisateur
-//			Optional<String> emailOptional = appUserService.getEmailByPhoneNumber(phone_number);
-//			String to = emailOptional.orElse("adresse_email_par_defaut@example.com"); // Valeur par défaut si l'e-mail n'est pas trouvé
-//
-//			String message = "Bonjour,\n\nIl semblerait qu'une tentative de connexion a été effectuée depuis un nouvel " +
-//					"appareil. Si vous n'êtes pas à l'origine de cette connexion, veuillez prendre des mesures immédiates " +
-//					"pour sécuriser votre compte.\n\nAdresse de l'utilisateur : " + address + "\n\nCordialement,\nPayit";
-//
-//			emailService.sendNotification(to, message);
-
-		}
-
-		String session = request.getSession().getAttribute("uuid").toString();
-		byte[] decodedKey = new Base64(true).decode(session);
-		Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-		byte[] s = new Base64().encode(decodedKey);
-		String ss = new String(s);
-		if(ss.contains("/"))
-		{
-			ss = ss.replaceAll("/", "B");
-		}
-		String pwd = decrypt(password,ss);
-		System.out.println(pwd);
-		UsernamePasswordAuthenticationToken authenticationToken=null;
-
-		try {
-			authenticationToken =
-					new UsernamePasswordAuthenticationToken(phone_number,pwd);
-
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
-		return authenticationManager.authenticate(authenticationToken);
-
-
-	}*/
-
-	/*@Override
-	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws AuthenticationException {
-
-		String phone_number = request.getParameter("phoneNumber");
-		String password = request.getParameter("password");
-		String currentDeviceId = request.getParameter("deviceId");
-		System.out.println("Current Device ID: " + currentDeviceId);
-*//*		double latitude = Double.parseDouble(request.getParameter("latitude"));
-		double longitude = Double.parseDouble(request.getParameter("longitude"));*//*
-		// Test
-		double latitude = 48.8588443;
-		double longitude = 2.2943516;
-		// Récupérer le deviceId de l'utilisateur en utilisant le numéro de téléphone
-
-		Optional<String> storedDeviceIdOptional = appUserService.findDeviceIdByPhoneNumber(phone_number);
-		String storedDeviceId = storedDeviceIdOptional.orElse("valeur_par_defaut");
-
-		// Comparer les deviceId
-		if (currentDeviceId.equals(storedDeviceId)) {
-
-			System.out.println("Le deviceId correspond. Utilisateur authentifié.");
-		} else {
-
-			System.out.println("Le deviceId ne correspond pas. Veuillez vous authentifier.");
-		}
-		// Obtenir l'adresse à partir de la latitude et de la longitude
-		String address;
-		try {
-			address = NominatimReverseGeocoder.getAddress(latitude, longitude);
-//			address = getAddress(latitude, longitude);
-		} catch (IOException | URISyntaxException e) {
-			address = "Adresse non disponible";
-			e.printStackTrace();
-		}
-		System.out.println("Adresse de l'utilisateur : " + address);
-
-
-		String session = request.getSession().getAttribute("uuid").toString();
-		byte[] decodedKey = new Base64(true).decode(session);
-		Key secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-		byte[] s = new Base64().encode(decodedKey);
-		String ss = new String(s);
-		if(ss.contains("/"))
-		{
-			ss = ss.replaceAll("/", "B");
-		}
-		String pwd = decrypt(password,ss);
-//		System.out.println(pwd);
-		UsernamePasswordAuthenticationToken authenticationToken=null;
-
-		try {
-			authenticationToken =
-					new UsernamePasswordAuthenticationToken(phone_number,pwd);
-
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
-		return authenticationManager.authenticate(authenticationToken);
-	}*/
 	@Override
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 											Authentication authResult) throws IOException, ServletException {
@@ -300,49 +228,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		new ObjectMapper().writeValue(response.getOutputStream(), resp);
 
 	}
-
-
-
-/*	@Override
-	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-											Authentication authResult) throws IOException, ServletException {
-
-		AppUser appUser = (AppUser) authResult.getPrincipal();
-		String deviceId = request.getParameter("deviceId");
-
-		// Récupérer le deviceId de l'utilisateur en utilisant le numéro de téléphone
-		Optional<String> storedDeviceIdOptional = appUserService.findDeviceIdByPhoneNumber(appUser.getPhoneNumber());
-		String storedDeviceId = storedDeviceIdOptional.orElse("");
-
-		// Comparer les deviceId
-		if (deviceId.equals(storedDeviceId)) {
-			// Le deviceId correspond, utilisateur authentifié
-
-			// Générer le jeton JWT
-			Algorithm algorithm = Algorithm.HMAC384("hps-secret-123*$");
-			String jwtAccess = JWT.create()
-					.withSubject(appUser.getFirstName())
-					.withExpiresAt(new Date(System.currentTimeMillis() + 5 * 60 * 1000))
-					.withIssuer(request.getRequestURL().toString())
-					.withClaim("roles", appUser.getAuthorities().stream().map(ga -> ga.getAuthority()).collect(Collectors.toList()))
-					.sign(algorithm);
-
-			// Ajouter le jeton dans l'en-tête de la réponse
-			response.setHeader("Authorization", jwtAccess);
-
-			// Continuer le traitement
-			chain.doFilter(request, response);
-
-		} else {
-			// Le deviceId ne correspond pas, session bloquée
-			// Vous pouvez renvoyer une réponse d'erreur appropriée, par exemple :
-			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-			response.setContentType("application/json");
-			PrintWriter out = response.getWriter();
-			out.println("{ \"error\": \"Invalid deviceId\" }");
-			out.flush();
-		}
-	}*/
 
 
 
