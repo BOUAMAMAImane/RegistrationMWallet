@@ -3,10 +3,9 @@ package stg.payit.wallet.appuser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-<<<<<<< HEAD
+
 import org.springframework.data.repository.query.Param;
-=======
->>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
+
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,25 +24,22 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
 //   Optional<AppUser> findByUsername(String username);
 
-<<<<<<< HEAD
-    Optional<AppUser> findByPhoneNumber(String phoneNumber);
-
     @Transactional(readOnly = true)
     @Query("SELECT u.email FROM AppUser u WHERE u.phoneNumber = ?1")
     Optional<String> findEmailByPhoneNumber(String phoneNumber);
+    Optional<AppUser> findByPhoneNumber(String phoneNumber);
+
+    @Query("SELECT d.deviceId FROM AppUser u JOIN u.devices d WHERE u.phoneNumber = :phoneNumber")
+    List<String> findDeviceIdByPhoneNumber(@Param("phoneNumber") String phoneNumber);
   /*  @Transactional(readOnly = true)
     @Query("SELECT u.deviceId FROM AppUser u WHERE u.phoneNumber = ?1")
     Optional<String> findDeviceIdByPhoneNumber(String phoneNumber);*/
-  @Query("SELECT d.deviceId FROM AppUser u JOIN u.devices d WHERE u.phoneNumber = :phoneNumber")
+/*  @Query("SELECT d.deviceId FROM AppUser u JOIN u.devices d WHERE u.phoneNumber = :phoneNumber")
   List<String> findDeviceIdByPhoneNumber(@Param("phoneNumber") String phoneNumber);
-=======
-    Optional<AppUser> findByPhoneNumber(String phone_number);
->>>>>>> 8a8232a9deba40f86a0615311284b941b01dbb78
+    Optional<AppUser> findByPhoneNumber(String phone_number);*/
 
 //    Optional<AppUser> findByPhoneNumber(String phoneNumber);
-    @Transactional(readOnly = true)
-    @Query("SELECT u.deviceId FROM AppUser u WHERE u.phoneNumber = ?1")
-    Optional<String> findDeviceIdByPhoneNumber(String phoneNumber);
+
     @Transactional
     @Modifying
     @Query("UPDATE AppUser a " + "SET a.enabled = 1 WHERE a.email = ?1")
