@@ -87,4 +87,22 @@ public class EmailService implements EmailSender{
             e.printStackTrace();
         }
     }
+    public void sendSecretCodeByEmail(String email, String secretCode) {
+        String subject = "Your Secret Code";
+        String message = "Hello,\n\nHere is your secret code: " + secretCode;
+
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+            helper.setText(message, true);
+            helper.setTo(email);
+            helper.setSubject(subject);
+            helper.setFrom("noreply@example.com"); // Remplacez par votre adresse e-mail
+            mailSender.send(mimeMessage);
+            System.out.println("Secret code sent successfully to: " + email);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Failed to send secret code by email");
+        }
+}
 }

@@ -23,6 +23,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static stg.payit.wallet.appuser.RandomSecretCodeGenerator.generateRandomSecretCode;
+
 @Service
 @AllArgsConstructor
 public class AppUserService implements UserDetailsService {
@@ -230,8 +232,12 @@ public class AppUserService implements UserDetailsService {
 	public ResponseEntity<Object> changePassword(Optional<AppUser> user, RegistrationRequest request) {
 
 		if (request.getPassword().equals(user.get().getPassword()) ) {
+			String secretCode = generateRandomSecretCode();
 			user.get().setPassword(request.getNewPassword());
 			appUserRepository.save(user.get());
+
+			emailSender.sendSecretCodeByEmail(user.get().getEmail(), secretCode);
+
 			return ResponseHandler.generateResponseString("password has been changed", HttpStatus.OK);
 		}else
 
