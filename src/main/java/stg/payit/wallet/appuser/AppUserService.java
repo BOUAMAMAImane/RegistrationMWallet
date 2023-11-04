@@ -66,16 +66,13 @@ public class AppUserService implements UserDetailsService {
 			throws UsernameNotFoundException {
 		return ResponseHandler.generateResponse("user found ", HttpStatus.OK,
 				appUserRepository.findByEmail(email));
-
 	}
 	public List<AppUser> getUsersByGender(String gender) {
 		return appUserRepository.findBygenderHomme(gender);
 
 	}
 	public ResponseEntity<Object> loadUserByPhoneNumber(String phone_number)
-
 	{
-
 		Optional<AppUser> usr = appUserRepository.findByPhoneNumber(phone_number);
 		if(usr.isPresent())
 		{	return ResponseHandler.generateResponse("user found", HttpStatus.OK, usr);}
@@ -228,20 +225,72 @@ public class AppUserService implements UserDetailsService {
 		}
 		return "Transaction Failed";
 	}
+	public ResponseEntity<Object> makenewPassword(Optional<AppUser> user, RegistrationRequest request) {
+		String secretFromRequest = request.getSecret();
+		String question1 = request.getQuestion1();
+		String question2 = request.getQuestion2();
+		String question3 = request.getQuestion3();
+		String email = request.getEmail();
+		System.out.println(question1);
+		Optional<String> secretOptional = appUserRepository.findSecretByEmail(email);
 
+		if (secretOptional.isPresent() && secretOptional.get().equals(secretFromRequest)) {
+
+			if (user.get().getQuestion1().equals(request.getQuestion1()) &&
+				user.get().getQuestion2().equals(question2) &&
+					user.get().getQuestion3().equals(question3)) {
+
+				user.get().setPassword(request.getPassword());
+				appUserRepository.save(user.get());
+
+				return ResponseHandler.generateResponseString("Password has been changed", HttpStatus.OK);
+			} else {
+				return ResponseHandler.generateResponse("Incorrect security questions", HttpStatus.OK, null);
+			}
+		} else {
+			return ResponseHandler.generateResponse("Incorrect secret", HttpStatus.OK, null);
+		}
+	}
 	public ResponseEntity<Object> changePassword(Optional<AppUser> user, RegistrationRequest request) {
+		if (request.getPassword().equals(user.get().getPassword())) {
+			String secretFromRequest = request.getSecret();
+			Optional<String> secretOptional = appUserRepository.findSecretByEmail(user.get().getEmail());
 
+			if (secretOptional.isPresent() && secretOptional.get().equals(secretFromRequest)) {
+				user.get().setPassword(request.getNewPassword());
+				appUserRepository.save(user.get());
+				return ResponseHandler.generateResponseString("password has been changed", HttpStatus.OK);
+			} else {
+				return ResponseHandler.generateResponse("incorrect secret", HttpStatus.OK, null);
+			}
+		} else {
+			return ResponseHandler.generateResponse("password incorrect", HttpStatus.OK, null);
+		}
+/*
 		if (request.getPassword().equals(user.get().getPassword()) ) {
-			String secretCode = generateRandomSecretCode();
+//			String secretCode = generateRandomSecretCode();
+			String secretFromRequest = request.getSecret();
+			Optional<String> secretOptional = appUserRepository.findSecretByEmail(user.get().getEmail());
+
 			user.get().setPassword(request.getNewPassword());
 			appUserRepository.save(user.get());
-
-			emailSender.sendSecretCodeByEmail(user.get().getEmail(), secretCode);
+//			emailSender.sendSecretCodeByEmail(user.get().getEmail(), secretCode);
 
 			return ResponseHandler.generateResponseString("password has been changed", HttpStatus.OK);
 		}else
 
 			return ResponseHandler.generateResponse("password incorrect", HttpStatus.OK, null);
+	}*/
+	}
+	public String getSecretByEmail(String userEmail) {
+		Optional<String> secretOptional = appUserRepository.findSecretByEmail(userEmail);
+		return secretOptional.orElse(null);
+	}
+	public void sendSecretCodeByEmail(String userEmail) {
+		String secretCode = generateRandomSecretCode();
+		appUserRepository.updateSecretByEmail(userEmail, secretCode);
+		emailSender.sendSecretCodeByEmail(userEmail, secretCode);
+
 	}
 
 }

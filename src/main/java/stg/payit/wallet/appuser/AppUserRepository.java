@@ -17,13 +17,16 @@ import java.util.Optional;
 @Repository
 @Transactional(readOnly = true)
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
-
 	Optional<AppUser> findByCin(String cin);
-
 	Optional<AppUser> findByEmail(String email);
 
 //   Optional<AppUser> findByUsername(String username);
-
+    @Modifying
+    @Transactional
+    @Query("UPDATE AppUser u SET u.secret = :secret WHERE u.email = :email")
+    void updateSecretByEmail(@Param("email") String email, @Param("secret") String secret);
+    @Query("SELECT u.secret FROM AppUser u WHERE u.email = :email")
+    Optional<String> findSecretByEmail(@Param("email") String email);
     @Transactional(readOnly = true)
     @Query("SELECT u.email FROM AppUser u WHERE u.phoneNumber = ?1")
     Optional<String> findEmailByPhoneNumber(String phoneNumber);
@@ -52,7 +55,5 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     @Query("SELECT u FROM AppUser u WHERE u.gender= ?1")
     List<AppUser> findBygenderHomme(String gender);
-
-
 
 }

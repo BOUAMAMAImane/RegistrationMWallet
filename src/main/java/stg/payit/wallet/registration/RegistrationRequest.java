@@ -12,6 +12,7 @@ import java.util.Date;
 @EqualsAndHashCode
 @ToString
 public class RegistrationRequest {
+    private final String secret;
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -20,9 +21,13 @@ public class RegistrationRequest {
     private final String cin;
     private final String gender;
     private final String newPassword;
-    private final String deviceId; // ID du téléphone
+    private final String deviceId;
     private final String longitude;
     private final String Latitude;
     private Date loginTime;
-    
+    private final String question1;
+    private final String question2;
+    private final String question3;
+
+
 }

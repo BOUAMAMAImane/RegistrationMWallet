@@ -39,6 +39,8 @@ import stg.payit.wallet.registration.RegistrationService;
 import stg.payit.wallet.responseHandler.ResponseHandler;
 import stg.payit.wallet.security.filters.JwtAuthenticationFilter;
 
+import static stg.payit.wallet.appuser.RandomSecretCodeGenerator.generateRandomSecretCode;
+
 
 @RestController
 @CrossOrigin("*")
@@ -52,7 +54,6 @@ public class RegistrationController {
 	private final AppUserRepository appUserRepository;
 	private final AppUserService appUserService;
 	private UserConfirmation userConfirmation = new UserConfirmation();
-
 	@PostMapping
 	public ResponseEntity<Object> register(@RequestBody RegistrationRequest request) {
 		if (appUserRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -149,7 +150,7 @@ public class RegistrationController {
 
 
 	@PutMapping("changepassword")
-	public ResponseEntity<Object>changePassword(@RequestBody RegistrationRequest registrationRequest) {
+	public ResponseEntity<Object> changePassword(@RequestBody RegistrationRequest registrationRequest) {
 		System.out.println("hello cett fct est fonctionnelle changepassword dans controller ! ");
 		Optional<AppUser> user = appUserRepository.findByEmail(registrationRequest.getEmail());
 		if (user.isPresent()) {
@@ -158,7 +159,35 @@ public class RegistrationController {
 		else
 			return ResponseHandler.generateResponseString("User not found", HttpStatus.OK);
 	}
-
+	@PutMapping("makenewpassword")
+	public ResponseEntity<Object> makenewPassword(@RequestBody RegistrationRequest registrationRequest) {
+		System.out.println("hello cett fct est fonctionnelle changepassword dans controller ! ");
+		Optional<AppUser> user = appUserRepository.findByEmail(registrationRequest.getEmail());
+		if (user.isPresent()) {
+			return appUserService.makenewPassword(user,registrationRequest);
+		}
+		else
+			return ResponseHandler.generateResponseString("User not found", HttpStatus.OK);
+	}
+	@PostMapping("/sendMotsecret")
+	public ResponseEntity<String> sendMotsecret(@RequestParam("user_email") String userEmail) {
+		try {
+			appUserService.sendSecretCodeByEmail(userEmail);
+			return ResponseEntity.ok("Mot secret envoyé avec succès !");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Une erreur s'est produite lors de l'envoi du mot secret.");
+		}
+	}
+	@GetMapping("/secret/{email}")
+	public ResponseEntity<String> getSecretByEmail(@PathVariable String email) {
+		String secret = appUserService.getSecretByEmail(email);
+		if (secret != null) {
+			return ResponseEntity.ok(secret);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
 	@GetMapping(path = "confirm")
 	public RedirectView confirm(@RequestParam("token") String token) {
 		registrationService.confirmToken(token);
@@ -203,9 +232,6 @@ public class RegistrationController {
 	public Boolean loadUserByphonee(@RequestParam("phone_number") String phone_number) {
 		return appUserService.loadUserByPhoneNumberr(phone_number);
 	}
-
-
-
 	@GetMapping("verifycin")
 	public Boolean existCin(@RequestParam("cin") String cin) {
 		Optional<AppUser> user = appUserRepository.findByCin(cin);

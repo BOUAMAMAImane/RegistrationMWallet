@@ -49,22 +49,20 @@ public class AppUser implements UserDetails {
 	private String longitude;
 	private String Latitude;
 	@Column(unique = true)
-	private String deviceId; // ID du téléphone
-
-
-
+	private String deviceId;
+	private String secret;
 	private Date loginTime;
 	@JsonIgnore
 	private String password;
 	@Enumerated(EnumType.STRING)
 	private AppUserRole appUserRole;
-	
 	private Boolean locked = false;
 	private Boolean enabled = false;
 	private String gender;
-
-
-//	@OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
+	private String question1;
+	private String question2;
+	private String question3;
+	//	@OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	@JsonIgnore
@@ -75,7 +73,7 @@ public class AppUser implements UserDetails {
 		device.setAppUser(this);
 	}
 	public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole,
-			String phoneNumber,String cin, String gender, String deviceId, String longitude,String latitude, Date loginTime) {
+			String phoneNumber,String cin, String gender, String deviceId, String longitude,String latitude, Date loginTime,String secret,String question1,String question2,String question3) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
@@ -94,6 +92,10 @@ public class AppUser implements UserDetails {
 		this.longitude = longitude;
 		this.Latitude=latitude;
 		this.loginTime = loginTime;
+		this.secret=secret;
+		this.question1 = question1;
+		this.question2 = question2;
+		this.question3 = question3;
 	}
 
 	@Override
